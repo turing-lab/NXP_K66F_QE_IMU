@@ -7,5 +7,5 @@ Pins Motor Left:
 - PTD0
 
 Pins Motor Right:
-- PTA19
-- PTA18
+- PTC8
+- PTC12
