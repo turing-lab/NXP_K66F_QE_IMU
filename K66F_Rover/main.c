@@ -19,17 +19,17 @@ ADCC trigger enabled and sources on SIM->SOPT7
 */
 
 // PID Constants
-#define PID_L_KP       	0.275f     		          	
-#define PID_L_KI       	0.125f          //0.025f  	         	
-#define PID_L_KD       	0.2f            //0.5f             		
+#define PID_L_KP        0.275f                    
+#define PID_L_KI        0.125f          //0.025f              
+#define PID_L_KD        0.2f            //0.5f                
 
-#define PID_R_KP       	0.275f               			
-#define PID_R_KI       	0.125f          //0.025         		
-#define PID_R_KD       	0.2f           //0.5f             		
+#define PID_R_KP        0.275f                    
+#define PID_R_KI        0.125f          //0.025             
+#define PID_R_KD        0.2f           //0.5f                 
 
 // Fixed Set Point
-//#define Left_SP	     		-3.5f
-//#define Right_SP   			-3.5f
+//#define Left_SP         -3.5f
+//#define Right_SP        -3.5f
 
 // Angular Velocities SP 
 float32_t Left_SP = 0.0f;
@@ -70,7 +70,7 @@ char rx_string[64];
 uint8_t n = 0;
 
 int main(void){
-		
+    
   // Left Motor PID Definitions
   Left_PID.Kp = PID_L_KP;        /* Proporcional */
   Left_PID.Ki = PID_L_KI;        /* Integral */
@@ -80,25 +80,25 @@ int main(void){
   Right_PID.Kp = PID_R_KP;        /* Proporcional */
   Right_PID.Ki = PID_R_KI;        /* Integral */
   Right_PID.Kd = PID_R_KD;        /* Derivative */
-	
-	// Hardware Initialization
+  
+  // Hardware Initialization
   LEDs_Init();
-  QD_Init(&QD_L,1);
-  QD_Init(&QD_R,2);
+  //QD_Init(&QD_L,1);
+  //QD_Init(&QD_R,2);
   Motor_Init(1);
   Motor_Init(2);
   UART_Init(115200);
   PIT_Init(PIT_FREQUENCY);
   SysTick_Config(SystemCoreClock/20);
-	
+  
   // Quadrature Decoding Process Initialization
-  QD_Process(&QD_L,1);
-  QD_Process(&QD_R,2);
-	
+  //QD_Process(&QD_L,1);
+  //QD_Process(&QD_R,2);
+  
   // PID Initialization
   arm_pid_init_f32(&Left_PID,1);
   arm_pid_init_f32(&Right_PID,1);
-	
+  
   while(1){
     if(data_ready){
       tokens[0] = strtok(rx_string,"*");
@@ -107,19 +107,19 @@ int main(void){
       if(!strcmp(tokens[0],"RB")){
         omega_a = (int16_t)strtol(tokens[1], NULL, 10);
         omega_b = (int16_t)strtol(tokens[2], NULL, 10);
-        Left_SP = omega_a/(100.0f);
-        Right_SP = omega_b/(100.0f);
+        Left_SP = omega_a/(240.0f);
+        Right_SP = omega_b/(240.0f);
         if (omega_a > 123) LED_On(0);
         else LED_Off(0);
         if (omega_b > 123) LED_On(2);
         else LED_Off(2);
         data_ready = 0;
-        sprintf(string,"%.2f, %.2f, %lld, %.2f, %.2f, %lld\r",Left_SP,QD_L.omega,QD_L.steps,Right_SP,QD_R.omega,QD_R.steps);
-        UART_PutString(string);
+        //sprintf(string,"%.2f, %.2f, %lld, %.2f, %.2f, %lld\r",Left_SP,QD_L.omega,QD_L.steps,Right_SP,QD_R.omega,QD_R.steps);
+        //UART_PutString(string);
       } else {
         if((!strcmp(tokens[0],"RESET_ENCODER"))){
           //QD_Reset(&QD_L);
-					//QD_Reset(&QD_R);
+          //QD_Reset(&QD_R);
         }
       }
     } 
@@ -137,16 +137,18 @@ void SysTick_Handler(void){
 
 // Angular Velocity Controller
 void PIT0_IRQHandler(void){
-  PIT->CHANNEL[0].TFLG |= PIT_TFLG_TIF_MASK;																										// Clear Flag
-  QD_Process(&QD_L,1);																																					// Quadrature Decoder Processing
-  QD_Process(&QD_R,2);
-  Left_error = Left_SP - QD_L.omega;																														// Error
-  Right_error = Right_SP - QD_R.omega;
-  L_Motor = ((Left_SP>=-0.01f)&&(Left_SP<=0.01f))?0.0f:arm_pid_f32(&Left_PID, Left_error);			// PID Output
-  R_Motor = ((Right_SP>=-0.01f)&&(Right_SP<=0.01f))?0.0f:arm_pid_f32(&Right_PID, Right_error);
-  L_Motor = Power_Verification(&L_Motor);																												// Power Verification (Between -1.0f and 1.0f)
+  PIT->CHANNEL[0].TFLG |= PIT_TFLG_TIF_MASK;                                                    // Clear Flag
+  //QD_Process(&QD_L,1);                                                                          // Quadrature Decoder Processing
+  //QD_Process(&QD_R,2);
+  //Left_error = Left_SP - QD_L.omega;                                                            // Error
+  //Right_error = Right_SP - QD_R.omega;
+  //L_Motor = ((Left_SP>=-0.01f)&&(Left_SP<=0.01f))?0.0f:arm_pid_f32(&Left_PID, Left_error);      // PID Output
+  //R_Motor = ((Right_SP>=-0.01f)&&(Right_SP<=0.01f))?0.0f:arm_pid_f32(&Right_PID, Right_error);
+  L_Motor = Left_SP;
+  R_Motor = Right_SP;
+  L_Motor = Power_Verification(&L_Motor);                                                       // Power Verification (Between -1.0f and 1.0f)
   R_Motor = Power_Verification(&R_Motor);
-  Motor_Set(&L_Motor,1);																																				// Set PWM to Motor Driver
+  Motor_Set(&L_Motor,1);                                                                        // Set PWM to Motor Driver
   Motor_Set(&R_Motor,2);
 }
 
@@ -157,7 +159,7 @@ void UART0_RX_TX_IRQHandler(void){
     data = UART0->D;
     if(data != '\r'){ 
       rx_string[n] = UART0->D;
-      n++;	
+      n++;  
       data_ready = 0;
     } else {
       rx_string[n] = '\0';
